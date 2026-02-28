@@ -229,7 +229,7 @@ setInterval(cleanupExpiredRooms, 60 * 60 * 1000);
 if (process.env.NODE_ENV === "production") {
   const clientDir = path.resolve(__dirname, "..", "dist");
   app.use(express.static(clientDir));
-  app.get("*", (_req, res) => {
+  app.get("/{*splat}", (_req, res) => {
     res.sendFile(path.join(clientDir, "index.html"));
   });
 }
