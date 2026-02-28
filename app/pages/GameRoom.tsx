@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams } from "react-router-dom";
+import { QRCodeSVG } from "qrcode.react";
 import socket from "../lib/socket";
 import HistoryModal from "../components/HistoryModal";
 
@@ -37,6 +38,7 @@ export default function GameRoom() {
   const [loading, setLoading] = useState(true);
   const [ending, setEnding] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
+  const [showQR, setShowQR] = useState(false);
   const [error, setError] = useState("");
 
   const fetchRoom = useCallback(async () => {
@@ -161,9 +163,26 @@ export default function GameRoom() {
       {/* Header */}
       <header className="flex items-center justify-between p-4 border-b border-white/10">
         <h1 className="text-white font-bold text-lg">Game Room</h1>
-        <div className="bg-white/10 px-3 py-1.5 rounded-lg border border-white/20">
-          <span className="text-white/60 text-xs">CODE</span>
-          <span className="text-white font-mono font-bold ml-2 text-lg tracking-wider">{code}</span>
+        <div className="flex items-center gap-2">
+          <div className="bg-white/10 px-3 py-1.5 rounded-lg border border-white/20">
+            <span className="text-white/60 text-xs">CODE</span>
+            <span className="text-white font-mono font-bold ml-2 text-lg tracking-wider">{code}</span>
+          </div>
+          <button
+            onClick={() => setShowQR(true)}
+            className="p-2 rounded-lg bg-white/10 border border-white/20 text-white hover:bg-white/20 transition-colors"
+            title="Show QR Code"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="2" y="2" width="8" height="8" rx="1" />
+              <rect x="14" y="2" width="8" height="8" rx="1" />
+              <rect x="2" y="14" width="8" height="8" rx="1" />
+              <rect x="14" y="14" width="4" height="4" />
+              <rect x="20" y="14" width="2" height="2" />
+              <rect x="14" y="20" width="2" height="2" />
+              <rect x="20" y="20" width="2" height="2" />
+            </svg>
+          </button>
         </div>
       </header>
 
@@ -205,16 +224,16 @@ export default function GameRoom() {
                   {s.participant.name}
                 </p>
                 <p className="text-white font-bold text-3xl tabular-nums">{s.value}</p>
-                <div className="flex gap-2 w-full">
+                <div className="flex w-full">
                   <button
                     onClick={() => handleDecrement(s.id)}
-                    className="flex-1 py-2 rounded-lg bg-red-500/20 border border-red-500/30 text-red-300 font-bold text-lg hover:bg-red-500/30 transition-colors active:scale-95"
+                    className="flex-1  py-2 rounded-l-lg bg-red-500/20 border border-red-500/30 text-red-300 font-bold text-lg hover:bg-red-500/30 transition-colors active:scale-95"
                   >
                     −
                   </button>
                   <button
                     onClick={() => handleIncrement(s.id)}
-                    className="flex-1 py-2 rounded-lg bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 font-bold text-lg hover:bg-emerald-500/30 transition-colors active:scale-95"
+                    className="flex-1 py-2 rounded-r-lg bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 font-bold text-lg hover:bg-emerald-500/30 transition-colors active:scale-95"
                   >
                     +
                   </button>
@@ -260,6 +279,25 @@ export default function GameRoom() {
           </button>
         )}
       </div>
+
+      {/* QR Code Modal */}
+      {showQR && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setShowQR(false)}>
+          <div className="bg-white rounded-2xl p-6 mx-4 max-w-xs w-full flex flex-col items-center gap-4 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-gray-900 font-bold text-lg">Scan to Join</h3>
+            <div className="bg-white p-3 rounded-xl">
+              <QRCodeSVG value={window.location.href} size={200} />
+            </div>
+            <p className="text-gray-500 text-sm text-center break-all">{window.location.href}</p>
+            <button
+              onClick={() => setShowQR(false)}
+              className="w-full py-3 rounded-xl bg-gray-900 text-white font-semibold hover:bg-gray-800 transition-colors active:scale-[0.98]"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* History Modal */}
       {showHistory && (
