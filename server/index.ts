@@ -1,8 +1,12 @@
+import path from "path";
+import { fileURLToPath } from "url";
 import express from "express";
 import { createServer } from "http";
 import { Server } from "socket.io";
 import cors from "cors";
 import prisma from "./prisma.js";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const app = express();
 const httpServer = createServer(app);
@@ -219,6 +223,16 @@ async function cleanupExpiredRooms() {
 
 // Run cleanup every hour
 setInterval(cleanupExpiredRooms, 60 * 60 * 1000);
+
+// ─── SERVE FRONTEND IN PRODUCTION ────────────────────────────────────────────
+
+if (process.env.NODE_ENV === "production") {
+  const clientDir = path.resolve(__dirname, "..", "dist");
+  app.use(express.static(clientDir));
+  app.get("*", (_req, res) => {
+    res.sendFile(path.join(clientDir, "index.html"));
+  });
+}
 
 const PORT = process.env.PORT || 3001;
 httpServer.listen(PORT, () => {

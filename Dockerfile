@@ -1,22 +1,44 @@
-FROM node:20-alpine AS development-dependencies-env
-COPY . /app
+# ── Stage 1: Install all dependencies ─────────────────────────────────────────
+FROM node:20-alpine AS deps
 WORKDIR /app
-RUN npm ci
+COPY package.json yarn.lock ./
+COPY prisma ./prisma/
+RUN yarn install --frozen-lockfile && npx prisma generate
 
-FROM node:20-alpine AS production-dependencies-env
-COPY ./package.json package-lock.json /app/
+# ── Stage 2: Build the Vite frontend ─────────────────────────────────────────
+FROM node:20-alpine AS build
 WORKDIR /app
-RUN npm ci --omit=dev
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+RUN npx prisma generate && yarn build
 
-FROM node:20-alpine AS build-env
-COPY . /app/
-COPY --from=development-dependencies-env /app/node_modules /app/node_modules
+# ── Stage 3: Production dependencies only ────────────────────────────────────
+FROM node:20-alpine AS prod-deps
 WORKDIR /app
-RUN npm run build
+COPY package.json yarn.lock ./
+COPY prisma ./prisma/
+RUN yarn install --frozen-lockfile --production && npx prisma generate
 
+# ── Stage 4: Final production image ──────────────────────────────────────────
 FROM node:20-alpine
-COPY ./package.json package-lock.json /app/
-COPY --from=production-dependencies-env /app/node_modules /app/node_modules
-COPY --from=build-env /app/build /app/build
 WORKDIR /app
-CMD ["npm", "run", "start"]
+
+# Copy production node_modules (includes @prisma/client + engine)
+COPY --from=prod-deps /app/node_modules ./node_modules
+
+# Copy Prisma schema (needed at runtime)
+COPY prisma ./prisma/
+
+# Copy built frontend assets
+COPY --from=build /app/dist ./dist
+
+# Copy server source + configs
+COPY server ./server/
+COPY package.json tsconfig.json tsconfig.server.json ./
+
+ENV NODE_ENV=production
+ENV PORT=3001
+
+EXPOSE 3001
+
+CMD ["npx", "tsx", "server/index.ts"]
