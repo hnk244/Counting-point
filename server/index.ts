@@ -234,7 +234,11 @@ if (process.env.NODE_ENV === "production") {
   });
 }
 
-const PORT = process.env.PORT || 3001;
-httpServer.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+const PORT = Number(process.env.PORT) || 10000;
+httpServer.listen(PORT, "0.0.0.0", () => {
+  console.log(`Server running on 0.0.0.0:${PORT}`);
 });
+
+// Prevent intermittent 502s on Render (recommended by Render docs)
+httpServer.keepAliveTimeout = 120_000;
+httpServer.headersTimeout = 120_000;

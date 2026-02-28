@@ -37,8 +37,8 @@ COPY server ./server/
 COPY package.json tsconfig.json tsconfig.server.json ./
 
 ENV NODE_ENV=production
-ENV PORT=3001
+ENV PORT=10000
 
-EXPOSE 3001
+EXPOSE 10000
 
 CMD ["npx", "tsx", "server/index.ts"]
