@@ -1,0 +1,24 @@
+.DS_Store
+.env
+/node_modules/
+
+# React Router
+/.react-router/
+/build/
+
+# Cache
+.cache/
+*.tsbuildinfo
+.vite/
+
+# Prisma
+prisma/*.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+Thumbs.db

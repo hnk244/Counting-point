@@ -1,0 +1,44 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model Room {
+  id           String        @id @default(auto()) @map("_id") @db.ObjectId
+  code         String        @unique
+  createdAt    DateTime      @default(now())
+  expiresAt    DateTime
+  isActive     Boolean       @default(true)
+  participants Participant[]
+  games        Game[]
+}
+
+model Participant {
+  id     String  @id @default(auto()) @map("_id") @db.ObjectId
+  name   String
+  roomId String  @db.ObjectId
+  room   Room    @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  scores Score[]
+}
+
+model Game {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  roomId    String   @db.ObjectId
+  room      Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  startedAt DateTime @default(now())
+  endedAt   DateTime?
+  scores    Score[]
+}
+
+model Score {
+  id            String      @id @default(auto()) @map("_id") @db.ObjectId
+  value         Int         @default(0)
+  participantId String      @db.ObjectId
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  gameId        String      @db.ObjectId
+  game          Game        @relation(fields: [gameId], references: [id], onDelete: Cascade)
+}
