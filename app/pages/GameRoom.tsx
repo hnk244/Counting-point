@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import { QRCodeSVG } from "qrcode.react";
-import socket from "../lib/socket";
+import { usePolling } from "../lib/usePolling";
 import HistoryModal from "../components/HistoryModal";
 
 interface Participant {
@@ -41,66 +41,24 @@ export default function GameRoom() {
   const [showQR, setShowQR] = useState(false);
   const [error, setError] = useState("");
 
-  const fetchRoom = useCallback(async () => {
-    try {
-      const res = await fetch(`/api/rooms/${code}`);
-      if (!res.ok) throw new Error();
-      const data: Room = await res.json();
-      setRoom(data);
-      // Find the active game (most recent without endedAt)
-      const active = data.games.find((g) => !g.endedAt);
-      if (active) {
-        setActiveGame(active);
-        setScores(active.scores);
+  const processRoom = useCallback((data: Room) => {
+    setRoom(data);
+    const active = data.games.find((g) => !g.endedAt);
+    if (active) {
+      setActiveGame(active);
+      setScores(active.scores);
+    } else {
+      const lastGame = data.games[0];
+      if (lastGame && lastGame.endedAt) {
+        setActiveGame(null);
+        setScores(lastGame.scores);
       }
-    } catch {
-      setError("Failed to load room");
-    } finally {
-      setLoading(false);
     }
-  }, [code]);
+    setLoading(false);
+  }, []);
 
-  useEffect(() => {
-    fetchRoom();
-    socket.emit("join-room", code);
-
-    const handleScoreUpdated = (data: {
-      scoreId: string;
-      participantId: string;
-      value: number;
-      participantName: string;
-    }) => {
-      setScores((prev) =>
-        prev.map((s) => (s.id === data.scoreId ? { ...s, value: data.value } : s))
-      );
-    };
-
-    const handleGameStarted = (game: Game) => {
-      setActiveGame(game);
-      setScores(game.scores);
-    };
-
-    const handleGameEnded = (game: Game) => {
-      setActiveGame(null);
-      setScores(game.scores);
-    };
-
-    const handleParticipantAdded = () => {
-      fetchRoom();
-    };
-
-    socket.on("score-updated", handleScoreUpdated);
-    socket.on("game-started", handleGameStarted);
-    socket.on("game-ended", handleGameEnded);
-    socket.on("participant-added", handleParticipantAdded);
-
-    return () => {
-      socket.off("score-updated", handleScoreUpdated);
-      socket.off("game-started", handleGameStarted);
-      socket.off("game-ended", handleGameEnded);
-      socket.off("participant-added", handleParticipantAdded);
-    };
-  }, [code, fetchRoom]);
+  // Poll room data every 2 seconds for real-time updates
+  usePolling<Room>(code ? `/api/rooms/${code}` : null, processRoom, 2000);
 
   async function handleIncrement(scoreId: string) {
     try {

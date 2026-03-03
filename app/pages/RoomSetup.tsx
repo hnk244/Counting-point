@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import socket from "../lib/socket";
+import { usePolling } from "../lib/usePolling";
 
 interface Participant {
   id: string;
@@ -18,24 +18,12 @@ export default function RoomSetup() {
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    socket.emit("join-room", code);
-    // Fetch existing participants
-    fetch(`/api/rooms/${code}`)
-      .then((r) => r.json())
-      .then((room) => setParticipants(room.participants || []))
-      .catch(() => {});
-    const handleAdded = (p: Participant) => {
-      setParticipants((prev) => {
-        if (prev.find((x) => x.id === p.id)) return prev;
-        return [...prev, p];
-      });
-    };
-    socket.on("participant-added", handleAdded);
-    return () => {
-      socket.off("participant-added", handleAdded);
-    };
-  }, [code]);
+  const handleRoomData = useCallback((room: { participants: Participant[] }) => {
+    setParticipants(room.participants || []);
+  }, []);
+
+  // Poll for participant updates every 2 seconds
+  usePolling(code ? `/api/rooms/${code}` : null, handleRoomData, 2000);
 
   async function handleAddParticipant() {
     if (!name.trim()) return;

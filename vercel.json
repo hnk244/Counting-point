@@ -1,0 +1,15 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "prisma generate && vite build",
+  "outputDirectory": "dist",
+  "rewrites": [
+    { "source": "/api/rooms/:code/participants", "destination": "/api/rooms/[code]/participants" },
+    { "source": "/api/rooms/:code/games", "destination": "/api/rooms/[code]/games" },
+    { "source": "/api/rooms/:code/history", "destination": "/api/rooms/[code]/history" },
+    { "source": "/api/rooms/:code", "destination": "/api/rooms/[code]" },
+    { "source": "/api/scores/:scoreId/increment", "destination": "/api/scores/[scoreId]/increment" },
+    { "source": "/api/scores/:scoreId/decrement", "destination": "/api/scores/[scoreId]/decrement" },
+    { "source": "/api/games/:gameId/end", "destination": "/api/games/[gameId]/end" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}
